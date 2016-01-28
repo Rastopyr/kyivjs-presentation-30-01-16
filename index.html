@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>PromisePipe</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+
+      img[alt="isomorphism-example"]{
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+      class: center, middle
+
+      ## Senin Roman
+      -------
+      ### twitter: @rastopyr_ua
+      ### github: @rastopyr
+      -------
+      `js`, `cljs`
+
+      `golang`, `erlang`
+
+      ---
+      class: center, middle
+
+      # PromisePipe
+      ### cross process homogenous Promise chains
+      .bottom.right[https://github.com/edjafarov/PromisePipe]
+
+      ---
+      class: middle
+
+      ```javascript
+      const doOnServer = PromisePipe.in('server')
+
+      const addItemAction = PromisePipe()
+        .then(validateItem)
+        .then(doOnServer(validateItemServer)) // will be executed on server
+        .then(doOnServer(saveItemInDB)) // will be executed on server
+        .then(addItem)
+        .catch(handleError);
+
+      addItemAction(item)
+      ```
+
+      ---
+      class: middle
+
+      ```javascript
+      const doOnServer = PromisePipe.in('server')
+
+      const addItemAction = PromisePipe()
+        .validateItem(validateItem)
+        .validateItemServer()
+        .saveItemInDB()
+        .addItem(addItem)
+        .catch(handleError);
+
+      addItemAction(item)
+      ```
+
+      ---
+      layout: true
+
+      # PROFIT???
+
+      ---
+
+      ---
+
+      count: false
+      * ### simplicity
+
+      ---
+
+      count: false
+      * ### simplicity
+      * ### testability
+
+      ---
+
+      count: false
+      * ### simplicity
+      * ### testability
+      * ### isomorphism
+
+      ---
+
+      count: false
+      * ### simplicity
+      * ### testability
+      * ### isomorphism
+      * ### scalability
+
+      ---
+      layout: false
+
+      # Simplicity
+
+      ```javascript
+        // Naive implementation
+        const doOnServer = PromisePipe.in('server')
+
+        const validateItem = PromisePipe()
+          .then(validateItem)
+          .then(doOnServer(validateItem))
+          .catch(handleError);
+
+        validateItem(item)
+      ```
+
+      ```javascript
+        const doOnServer = PromisePipe.in('server')
+
+        const validateItem = PromisePipe()
+          .then(validateItem)
+          .then(
+            PromisePipe().
+              .then(doOnServer(validateItem))
+              .catch(doOnServer(handleError))
+          )
+          .catch(handleError);
+
+        validateItem(item)
+      ```
+      ---
+
+      layout: true
+      # Testability
+
+      ```javascript
+        // src/validate.js
+
+        export function validateItem() { /* some code */ }
+
+        export const validateAction = PromisePipe()
+          .then(validateItem)
+          .then(
+            PromisePipe().
+              .then(doOnServer(validateItem))
+              .catch(doOnServer(handleError))
+          ).catch(handleError);
+      ```
+
+      ---
+
+      ```javascript
+      // tests/validate.js
+
+      import { validateAction } from '../src/validate';
+
+      it('should return boolean value', function(done) {
+        validateAction().then(function(isValid) {
+          expect(isValid).to.be.ok;
+          assert.equal(isValid, true);
+          done();
+        });
+      });
+      ```
+
+      ---
+      count: false
+
+      ```javascript
+      // tests/validate.js
+
+      import { validateItem } from '../src/validate';
+
+      it('should return boolean value', function() {
+        expect(validateItem({})).to.be.ok;
+        assert.equal(isValid, true);
+      });
+      ```
+
+      ---
+      layout: true
+
+      # Isomorphism
+
+      ---
+
+      ![isomorphism-example](PromisePipe.png)
+
+      ---
+
+      count: false
+      ```javascript
+      const doOnServer = PromisePipe.in('server');
+      ```
+
+      ---
+
+      count: false
+      ```javascript
+      const doOnServer = PromisePipe.in('server');
+
+      const doOnWorker = PromisePipe.in('worker');
+      ```
+
+      ---
+
+      count: false
+      ```javascript
+      const doOnServer = PromisePipe.in('server');
+
+      const doOnWorker = PromisePipe.in('worker');
+
+      export default PromisePipe()
+        .then(someClientFunc)
+        .then(doOnServer(someServerFunc))
+        .then(doOnWorker(someWorkerFunc))
+      ```
+
+      ---
+
+      count: false
+      ```javascript
+      const doOnServer = PromisePipe.in('server');
+
+      const doOnWorker = PromisePipe.in('worker');
+
+      export default PromisePipe()
+        .then(someClientFunc)
+        .then(doOnServer(someServerFunc))
+        .then(doOnWorker(someWorkerFunc));
+
+      export const nested = PromisePipe()
+        .then(someClientFunc)
+        .then(doOnServer(
+          PromisePipe().then(nestedServerFunction)
+        ))
+        .then(doOnWorker(
+          PromisePipe().then(nestedServerFunction)
+        ))
+      ```
+
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
