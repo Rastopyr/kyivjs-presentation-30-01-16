@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>PromisePipe</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+
+      img[alt="full"]{
+        width: 65%;
+        height: 65%;
+      }
+
+      img[alt="full-width"]{
+        width: 100%;
+        height: 100%;
+      }
+
+      .small-icon img {
+        width: 28px;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+      class: center, middle
+
+      ## Senin Roman
+      -------
+      ### twitter: @rastopyr_ua
+      ### github: @rastopyr
+      -------
+      `js`, `cljs`
+
+      `golang`, `erlang`
+
+      ---
+      class: center, middle
+
+      # PromisePipe
+      ### cross process homogenous Promise chains
+      .bottom.right[https://github.com/edjafarov/PromisePipe]
+
+      ---
+      layout: true
+      # Why I think this important?
+
+      ---
+      count: false
+      ---
+
+      * ### We have: Rendr, Meteor, Derby, React
+
+      ---
+      count: false
+
+      * ### We have: Rendr, Meteor, Derby, React
+      * ### We can:
+
+      ---
+      count: false
+
+      * ### We have: Rendr, Meteor, Derby, React
+      * ### We can:
+        *  ### ServerSide rendering
+
+      ---
+      count: false
+
+      * ### We have: Rendr, Meteor, Derby, React
+      * ### We can:
+        *  ### ServerSide rendering
+        *  ### Reactive isomorphic
+
+      ---
+      count: false
+
+      * ### We have: Rendr, Meteor, Derby, React
+      * ### We can:
+        *  ### ServerSide rendering
+        *  ### Reactive isomorphic
+      *  ### We can't create simple cross-process logic
+
+      ---
+      layout: false
+      class: middle
+
+      ```javascript
+      const pipe = PromisePipe();
+
+      const doOnServer = PromisePipe.in('server')
+
+      const registerUser = pipe
+        .then(validateForm)
+        .then(doOnServer(validateUser)) // will be executed on server
+        .then(doOnServer(saveUserInDB)) // will be executed on server
+        .then(doOnServer(sendVerifyEmail)) // will be executed on server
+        .then(successRegistration)
+        .catch(failRegistration);
+
+      if(typeof(window) !== 'object'){
+        pipe.setEnv('server');
+      } else {
+        pipe.setEnv('client');
+        registerUser({
+          email: 'rastopyr@gmail.com',
+          password: 'password',
+        });
+      }
+      ```
+
+      ---
+      class: middle
+
+      ```javascript
+      const pipe = PromisePipe();
+
+      const registerUser = pipe
+        .validateForm(validateForm)
+        .validateUser() // will be executed on server
+        .saveUserInDB() // will be executed on server
+        .sendVerifyEmail() // will be executed on server
+        .successRegistration()
+        .catch(failRegistration);
+
+      if(typeof(window) !== 'object'){
+        pipe.setEnv('server');
+      } else {
+        pipe.setEnv('client');
+        registerUser({
+          email: 'rastopyr@gmail.com',
+          password: 'password',
+        });
+      }
+      ```
+
+      ---
+      layout: true
+
+      # PROFIT???
+
+      ---
+
+      ---
+
+      count: false
+      * ### focus
+
+      ---
+
+      count: false
+      * ### focus
+      * ### separation of logic and infrastructure
+
+      ---
+      count: false
+      * ### focus
+      * ### separation of logic and infrastructure
+      * ### testability
+
+      ---
+
+      count: false
+      * ### focus
+      * ### separation of logic and infrastructure
+      * ### testability
+      * ### isomorphism
+
+      ---
+
+      count: false
+      * ### focus
+      * ### separation of logic and infrastructure
+      * ### testability
+      * ### isomorphism
+      * ### scalability *
+
+      ---
+      layout: false
+      # Focus
+
+      .center.middle[![full](example-of-focus.png)]
+
+      ---
+      layout: true
+      # Separation of logic and infrastructure
+      ---
+
+      ```javascript
+        PromisePipe()
+          .then(validateUser)
+          .then(doOnServer(saveUserInDB))
+          .then(successRegistration)
+          .catch(failRegistration);
+      ```
+
+      ---
+      count: false
+      ```javascript
+        PromisePipe()
+          .then(validateUser)
+          .then(doOnServer(saveUserInDB))
+          .then(successRegistration)
+          .catch(failRegistration);
+      ```
+
+      ```javascript
+        PromisePipe()
+          .then(validateUser)
+          .then(doOnServer((data) => validateUser(data.user)))
+          .then(doOnServer(saveUserInDB))
+          .then(successRegistration)
+          .catch(failRegistration);
+      ```
+      ---
+
+      layout: true
+      # Testability
+
+      ```javascript
+        export function validateUser(user) {
+          if (!isEmail(user.email)) {
+            return Promise.reject(/* Error info */ );
+          }
+
+          return Promise.resolve({ isValid: true })
+        }
+
+        export const validateAction = PromisePipe()
+          .then(validateUser)
+          .catch(handleError);
+      ```
+
+      ---
+
+      ```javascript
+      import { validateAction } from '../src/validate';
+
+      it('should return boolean value', function(done) {
+        return validateAction({
+          email: 'rastopyr@gmail.com'
+        }).then(function(data) {
+          expect(data.isValid).to.be.ok;
+        });
+      });
+      ```
+
+      ---
+      count: false
+
+      ```javascript
+      // tests/validate.js
+
+      import { validateItem } from '../src/validate';
+
+      it('should return boolean value', function() {
+        expect(validateUser({
+          email: 'rastopyr@gmail.com',
+        }).isValid).to.be.ok;
+      });
+      ```
+
+      ---
+      layout: true
+
+      # Isomorphism
+
+      ---
+
+      ![full-width](PromisePipe.png)
+
+      ---
+
+      count: false
+      ```javascript
+      const doOnServer = PromisePipe.in('server');
+      ```
+
+      ---
+
+      count: false
+      ```javascript
+      const doOnServer = PromisePipe.in('server');
+
+      const doOnWorker = PromisePipe.in('worker');
+      ```
+
+      ---
+
+      count: false
+      ```javascript
+      const doOnServer = PromisePipe.in('server');
+
+      const doOnWorker = PromisePipe.in('worker');
+
+      export default PromisePipe()
+        .then(registerUser)
+        .then(doOnServer(saveUser))
+        .then(doOnWorker(addEmailToQueue));
+      ```
+
+      ---
+
+      count: false
+      ```javascript
+      const doOnServer = PromisePipe.in('server');
+
+      const doOnWorker = PromisePipe.in('worker');
+
+      export default PromisePipe()
+        .then(registerUser)
+        .then(doOnServer(saveUser))
+        .then(doOnWorker(addEmailToQueue));
+      ```
+
+      ---
+      layout:true
+
+      # Can i use?
+
+      ---
+
+      ---
+      count: false
+      *  ### Backend application* 👍
+
+      ---
+      count: false
+      *  ### Backend application* 👍
+      *  ### SPA 👍
+
+      ---
+      count: false
+      *  ### Backend application* 👍
+      *  ### SPA 👍
+      *  ### Isomorphic reactivity 💩
+
+      ---
+      layout: true
+
+      # Do you have a plan mr.Fox?
+
+      ---
+
+      ---
+      count: false
+
+      * ### Boilerplate of SPA application
+
+      ---
+      count: false
+
+      * ### Boilerplate of SPA application
+      * ### Test tool
+
+      ---
+      count: false
+
+      * ### Boilerplate of SPA application
+      * ### Test tool
+      * ### Stake out the communication
+
+      ---
+      count: false
+
+      * ### Boilerplate of SPA application
+      * ### Test tool
+      * ### Stake out the communication
+      * ### Isomorphic reactivity
+
+      ---
+      layout: false
+
+      # Links
+
+      * ### .small-icon[![](https://cdn0.iconfinder.com/data/icons/octicons/1024/mark-github-128.png)] [https://github.com/edjafarov/PromisePipe](https://github.com/edjafarov/PromisePipe)
+      * ### .small-icon[![](http://static.micromono.io/images/gitter-icon.png)] [https://gitter.im/edjafarov/PromisePipe](https://gitter.im/edjafarov/PromisePipe)
+      * ### [http://eldar.djafarov.com/](http://eldar.djafarov.com/)
+      * ### [http://frontender.info/promisepipe-cross-process-homogenous-promise-chains/](http://frontender.info/promisepipe-cross-process-homogenous-promise-chains/)
+
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
